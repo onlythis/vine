@@ -47,7 +47,6 @@
 				rem.push(x);
 			}
 		}
-		console.log(rem);
 		for(let x = rem.length-1; x>=0; x--){
 			sqrs.splice(rem[x],1);
 		}
@@ -123,24 +122,26 @@
 	var spin=0;
 	var prev = [0,0,0];
 	function render() {
-		pos[0].position.x=Math.round(Math.sin(spin)*10)*4;
-		pos[0].position.z=Math.round(Math.cos(spin)*10)*4;
-		pos[0].position.y=Math.round(spin*Math.PI)*4;
+		pos[0].position.x=Math.round(Math.sin(spin)*15)*4;
+		pos[0].position.z=Math.round(Math.cos(spin)*15)*4;
+		pos[0].position.y=Math.round(spin*15/Math.PI)*4;
 		let check = new Array(pos[0].position.x,pos[0].position.y,pos[0].position.z);
 		let is_same = prev.every(function(element, index) {	return element === check[index];});
 		if(!is_same) {
 			drawroot(check);
 			prev= new Array(check[0],check[1],check[2]);
-			if(pos.length%4==1) {
+			if(pos.length%2==1) {
 				let curr =branch(pos[pos.length-2].position.toArray(),pos.length-2);
+				if(curr.length==5){
+					console.log(curr);
+				}
 				curr.map(function(x) {
 					drawbranch(x);
 				});
 			}
 		}
-		spin+=.01;
-		if(spin>Math.PI*8){
-			continueAnim=false;
+		if(spin<Math.PI*8){
+			spin+=.005;
 		}
 		renderer.render(scene, camera);
 	}
@@ -165,9 +166,9 @@
 	function drawbranch(loc) {
 		let center = new THREE.Group();
 		scene.add(center);
-		const boxGeo = new THREE.CubeGeometry(4,4,4);
+		const boxGeo = new THREE.CubeGeometry(2,2,2);
 		const boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color("rgb(0, 0, 128)"),
+			color: new THREE.Color("rgb(0, 255, 0)"),
 			shading: THREE.FlatShading,
 			transparent: true,
 			opacity: .5
@@ -182,9 +183,9 @@
 		function drawcenter() {
 			let center = new THREE.Group();
 			scene.add(center);
-			const boxGeo = new THREE.CubeGeometry(80,8,80);
+			const boxGeo = new THREE.CubeGeometry(120,4,120);
 			const boxMat = new THREE.MeshPhongMaterial({
-				color: new THREE.Color("rgb(0, 255, 0)"),
+				color: new THREE.Color("rgb(0, 0, 128)"),
 				shading: THREE.FlatShading,
 				transparent: true,
 				opacity: .5
