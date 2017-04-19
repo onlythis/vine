@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>three</title>
+	<title>Vine</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
@@ -28,15 +28,53 @@
 	<script>
 
 	'use strict';
-//posroot isnt random. goes in circle follows grid. or doesnt follow grid is much more circular looking.
-//root doing vine in grid. look at netbeans code
+	//posroot isnt random. goes in circle follows grid. or doesnt follow grid is much more circular looking.
+	//root doing vine in grid. look at netbeans code
 
+
+	//mesh.add( mesh2 );
 	var pos = [];
+	var root;
 	function vineRoot(currpos) {
 
 	}
+	var branches = {
+		pos: [],
+		initdirr: [],
+		length: []
+	};
+	var extend_index = 0;
+	function extend(pos, dirr, index){
+		let loc = -1;
+		if(dirr==0){
+			loc = new Array(pos[0]-2, pos[1], pos[2]);
+		}
+		if(dirr==1){
+			loc = new Array(pos[0]+2, pos[1], pos[2]);
+		}
+		if(dirr==2){
+			loc = new Array(pos[0], pos[1]-2, pos[2]);
+		}
+		if(dirr==3){
+			loc = new Array(pos[0], pos[1]+2, pos[2]);
+		}
+		if(dirr==4){
+			loc = new Array(pos[0], pos[1], pos[2]-2);
+		}
+		if(dirr==5){
+			loc = new Array(pos[0], pos[1], pos[2]+2);
+		}
+		branches.pos[index] = loc;
+		branches.length[index]+=1;
+		if(branches.length[index]>7){
+			extend_index+=1;
+		}
+		drawbranch(loc);
+	}
+
 	function branch(currpos, index) {
 		let sqrs = adjacentsqs(currpos);
+		let initdirrs = [0,1,2,3,4,5];
 		let rem = [];
 		let posprev = new Array(pos[index-1].position.x,pos[index-1].position.y,pos[index-1].position.z);
 		let posnext = new Array(pos[index+1].position.x,pos[index+1].position.y,pos[index+1].position.z);
@@ -49,9 +87,16 @@
 		}
 		for(let x = rem.length-1; x>=0; x--){
 			sqrs.splice(rem[x],1);
+			initdirrs.splice(rem[x],1);
+		}
+		for(let x = 0; x<sqrs.length; x++){
+			branches.pos.push(sqrs[x]);
+			branches.initdirr.push(initdirrs[x]);
+			branches.length.push(0);
 		}
 		return sqrs;
 	}
+	//dirrs = left, right, down, up, back, forward
 	function adjacentsqs(currpos) {
 		let ret = [];
 		ret.push(new Array(currpos[0]-4,currpos[1],currpos[2]));
@@ -61,6 +106,86 @@
 		ret.push(new Array(currpos[0],currpos[1],currpos[2]-4));
 		ret.push(new Array(currpos[0],currpos[1],currpos[2]+4));
 		return ret;
+	}
+
+
+	var spin=0;
+	var prev = [0,0,0];
+	function render() {
+		pos[0].position.x=Math.round(Math.sin(spin)*15)*4;
+		pos[0].position.z=Math.round(Math.cos(spin)*15)*4;
+		pos[0].position.y=Math.round(spin*15/Math.PI)*4;
+		let check = new Array(pos[0].position.x,pos[0].position.y,pos[0].position.z);
+		let is_same = prev.every(function(element, index) {	return element === check[index];});
+		if(!is_same) {
+			drawroot(check);
+			for(let x = extend_index; x<branches.pos.length; x++) {
+				extend(branches.pos[x], branches.initdirr[x], x);
+			}
+			prev= new Array(check[0],check[1],check[2]);
+			if(pos.length%8==1) {
+				let curr =branch(pos[pos.length-2].position.toArray(),pos.length-2);
+				curr.map(function(x) {
+					drawbranch(x);
+				});
+
+			}
+		}
+		if(spin<Math.PI*8){
+			spin+=.005;
+		}
+		renderer.render(scene, camera);
+	}
+
+	function drawroot(loc) {
+		let center = new THREE.Group();
+		scene.add(center);
+		const boxGeo = new THREE.CubeGeometry(4,4,4);
+		const boxMat = new THREE.MeshPhongMaterial({
+			color: new THREE.Color("rgb(255, 0, 0)"),
+			shading: THREE.FlatShading,
+			transparent: true,
+			opacity: .5
+		});
+		const obj = new THREE.Mesh(boxGeo, boxMat);
+		obj.castShadow = true;
+		obj.receiveShadow = true;
+		obj.position.set(loc[0],loc[1],loc[2]);
+		pos.push(obj);
+		center.add(obj);
+	}
+	function drawbranch(loc) {
+		let center = new THREE.Group();
+		scene.add(center);
+		const boxGeo = new THREE.CubeGeometry(2,2,2);
+		const boxMat = new THREE.MeshPhongMaterial({
+			color: new THREE.Color("rgb(0, 255, 0)"),
+			shading: THREE.FlatShading,
+			transparent: true,
+			opacity: .5
+		});
+		const obj = new THREE.Mesh(boxGeo, boxMat);
+		obj.castShadow = true;
+		obj.receiveShadow = true;
+		obj.position.set(loc[0],loc[1],loc[2]);
+		center.add(obj);
+	}
+
+	function drawcenter() {
+		let center = new THREE.Group();
+		scene.add(center);
+		const boxGeo = new THREE.CubeGeometry(120,4,120);
+		const boxMat = new THREE.MeshPhongMaterial({
+			color: new THREE.Color("rgb(0, 0, 128)"),
+			shading: THREE.FlatShading,
+			transparent: true,
+			opacity: .5
+		});
+		const obj = new THREE.Mesh(boxGeo, boxMat);
+		obj.castShadow = true;
+		obj.receiveShadow = true;
+		obj.position.set(0,0,0);
+		center.add(obj);
 	}
 
 	var scene, camera, renderer, controls;
@@ -119,83 +244,6 @@
 			cancelAnimationFrame(animframe);
 		}
 	}
-	var spin=0;
-	var prev = [0,0,0];
-	function render() {
-		pos[0].position.x=Math.round(Math.sin(spin)*15)*4;
-		pos[0].position.z=Math.round(Math.cos(spin)*15)*4;
-		pos[0].position.y=Math.round(spin*15/Math.PI)*4;
-		let check = new Array(pos[0].position.x,pos[0].position.y,pos[0].position.z);
-		let is_same = prev.every(function(element, index) {	return element === check[index];});
-		if(!is_same) {
-			drawroot(check);
-			prev= new Array(check[0],check[1],check[2]);
-			if(pos.length%2==1) {
-				let curr =branch(pos[pos.length-2].position.toArray(),pos.length-2);
-				if(curr.length==5){
-					console.log(curr);
-				}
-				curr.map(function(x) {
-					drawbranch(x);
-				});
-			}
-		}
-		if(spin<Math.PI*8){
-			spin+=.005;
-		}
-		renderer.render(scene, camera);
-	}
-
-	function drawroot(loc) {
-		let center = new THREE.Group();
-		scene.add(center);
-		const boxGeo = new THREE.CubeGeometry(4,4,4);
-		const boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color("rgb(255, 0, 0)"),
-			shading: THREE.FlatShading,
-			transparent: true,
-			opacity: .5
-		});
-		const obj = new THREE.Mesh(boxGeo, boxMat);
-		obj.castShadow = true;
-		obj.receiveShadow = true;
-		obj.position.set(loc[0],loc[1],loc[2]);
-		pos.push(obj);
-		center.add(obj);
-	}
-	function drawbranch(loc) {
-		let center = new THREE.Group();
-		scene.add(center);
-		const boxGeo = new THREE.CubeGeometry(2,2,2);
-		const boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color("rgb(0, 255, 0)"),
-			shading: THREE.FlatShading,
-			transparent: true,
-			opacity: .5
-		});
-		const obj = new THREE.Mesh(boxGeo, boxMat);
-		obj.castShadow = true;
-		obj.receiveShadow = true;
-		obj.position.set(loc[0],loc[1],loc[2]);
-		center.add(obj);
-	}
-
-		function drawcenter() {
-			let center = new THREE.Group();
-			scene.add(center);
-			const boxGeo = new THREE.CubeGeometry(120,4,120);
-			const boxMat = new THREE.MeshPhongMaterial({
-				color: new THREE.Color("rgb(0, 0, 128)"),
-				shading: THREE.FlatShading,
-				transparent: true,
-				opacity: .5
-			});
-			const obj = new THREE.Mesh(boxGeo, boxMat);
-			obj.castShadow = true;
-			obj.receiveShadow = true;
-			obj.position.set(0,0,0);
-			center.add(obj);
-		}
 
 	init();
 	animate();
