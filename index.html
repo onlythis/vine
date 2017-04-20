@@ -33,8 +33,7 @@
 
 
 	//mesh.add( mesh2 );
-	var pos = [];
-	var root;
+
 	function vineRoot(currpos) {
 
 	}
@@ -112,10 +111,14 @@
 	var spin=0;
 	var prev = [0,0,0];
 	function render() {
-		pos[0].position.x=Math.round(Math.sin(spin)*15)*4;
-		pos[0].position.z=Math.round(Math.cos(spin)*15)*4;
-		pos[0].position.y=Math.round(spin*15/Math.PI)*4;
-		let check = new Array(pos[0].position.x,pos[0].position.y,pos[0].position.z);
+		root.position.x=Math.round(Math.sin(spin)*15)*4;
+		root.position.z=Math.round(Math.cos(spin)*15)*4;
+		root.position.y=Math.round(spin*15/Math.PI)*4;
+		root.children[0].rotateY(.005);
+		test.children[0].position.y = Math.round(Math.cos(spin*10)*2)*4;
+		test.children[0].position.z = Math.round(Math.sin(spin*10)*2)*4;
+
+		let check = new Array(root.position.x,root.position.y,root.position.z);
 		let is_same = prev.every(function(element, index) {	return element === check[index];});
 		if(!is_same) {
 			drawroot(check);
@@ -140,13 +143,6 @@
 	function drawroot(loc) {
 		let center = new THREE.Group();
 		scene.add(center);
-		const boxGeo = new THREE.CubeGeometry(4,4,4);
-		const boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color("rgb(255, 0, 0)"),
-			shading: THREE.FlatShading,
-			transparent: true,
-			opacity: .5
-		});
 		const obj = new THREE.Mesh(boxGeo, boxMat);
 		obj.castShadow = true;
 		obj.receiveShadow = true;
@@ -154,17 +150,13 @@
 		pos.push(obj);
 		center.add(obj);
 	}
+
 	function drawbranch(loc) {
 		let center = new THREE.Group();
 		scene.add(center);
 		const boxGeo = new THREE.CubeGeometry(2,2,2);
-		const boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color("rgb(0, 255, 0)"),
-			shading: THREE.FlatShading,
-			transparent: true,
-			opacity: .5
-		});
-		const obj = new THREE.Mesh(boxGeo, boxMat);
+
+		const obj = new THREE.Mesh(boxGeo, boxMat2);
 		obj.castShadow = true;
 		obj.receiveShadow = true;
 		obj.position.set(loc[0],loc[1],loc[2]);
@@ -188,10 +180,12 @@
 		center.add(obj);
 	}
 
+	var pos = [];
+	var root, test, test2;
 	var scene, camera, renderer, controls;
 
 	var width = window.innerWidth, height = window.innerHeight;
-
+	var animframe;
 	var continueAnim = true;
 
 	function init() {
@@ -202,6 +196,17 @@
 		camera.position.z = 200;
 		camera.position.y = 200;
 		camera.position.x = 50;
+
+
+		root = new THREE.Mesh(boxGeo, boxMat);
+		scene.add(root);
+
+
+		test = new THREE.Mesh(boxGeoinvis, boxMatinvis);
+		test2 = new THREE.Mesh(boxGeo2, boxMat2);
+		root.add(test);
+
+		test.add(test2);
 
 		renderer = new THREE.WebGLRenderer();
 		renderer.setPixelRatio(window.devicePixelRatio);
@@ -236,7 +241,7 @@
 		camera.updateProjectionMatrix();
 		renderer.setSize(width, height);
 	}
-	var animframe;
+
 	function animate() {
 		animframe = requestAnimationFrame(animate);
 		render();
@@ -244,6 +249,27 @@
 			cancelAnimationFrame(animframe);
 		}
 	}
+
+	const boxGeo = new THREE.CubeGeometry(4,4,4);
+	const boxMat = new THREE.MeshPhongMaterial({
+		color: new THREE.Color("rgb(255, 0, 0)"),
+		shading: THREE.FlatShading,
+		transparent: true,
+		opacity: .5
+	});
+	const boxGeo2 = new THREE.CubeGeometry(4,4,2);
+	const boxMat2 = new THREE.MeshPhongMaterial({
+		color: new THREE.Color("rgb(0, 255, 0)"),
+		shading: THREE.FlatShading,
+		transparent: true,
+		opacity: .5
+	});
+	const boxGeoinvis = new THREE.CubeGeometry(0,0,0);
+	const boxMatinvis = new THREE.MeshPhongMaterial({
+		color: new THREE.Color("rgb(0, 0, 0)"),
+		transparent: true,
+		opacity: 1
+	});
 
 	init();
 	animate();
