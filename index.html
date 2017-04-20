@@ -250,22 +250,22 @@
 		}
 	}
 
-	const boxGeo = new THREE.CubeGeometry(4,4,4);
-	const boxMat = new THREE.MeshPhongMaterial({
+	var boxGeo = new THREE.CubeGeometry(4,4,4);
+	var boxMat = new THREE.MeshPhongMaterial({
 		color: new THREE.Color("rgb(255, 0, 0)"),
 		shading: THREE.FlatShading,
 		transparent: true,
 		opacity: .5
 	});
-	const boxGeo2 = new THREE.CubeGeometry(4,4,2);
-	const boxMat2 = new THREE.MeshPhongMaterial({
+	var boxGeo2 = new THREE.CubeGeometry(4,4,2);
+	var boxMat2 = new THREE.MeshPhongMaterial({
 		color: new THREE.Color("rgb(0, 255, 0)"),
 		shading: THREE.FlatShading,
 		transparent: true,
 		opacity: .5
 	});
-	const boxGeoinvis = new THREE.CubeGeometry(0,0,0);
-	const boxMatinvis = new THREE.MeshPhongMaterial({
+	var boxGeoinvis = new THREE.CubeGeometry(0,0,0);
+	var boxMatinvis = new THREE.MeshPhongMaterial({
 		color: new THREE.Color("rgb(0, 0, 0)"),
 		transparent: true,
 		opacity: 1
