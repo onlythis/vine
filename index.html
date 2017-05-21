@@ -107,16 +107,19 @@
 		return ret;
 	}
 
-
 	var spin=0;
 	var prev = [0,0,0];
+	var branches2 = [];
 	function render() {
 		root.position.x=Math.round(Math.sin(spin)*15)*4;
 		root.position.z=Math.round(Math.cos(spin)*15)*4;
 		root.position.y=Math.round(spin*15/Math.PI)*4;
 		root.children[0].rotateY(.005);
-		test.children[0].position.y = Math.round(Math.cos(spin*10)*2)*4;
-		test.children[0].position.z = Math.round(Math.sin(spin*10)*2)*4;
+		test.children[0].position.z = Math.sin(spin*4)*4;
+		test.children[0].position.y = Math.cos(spin*4)*4;
+		revolve[0] = Math.round(Math.sin(spin)*15*4+Math.sin(spin*10)*8);
+		revolve[1] = Math.round(spin*60/Math.PI+(Math.sin(spin*4)*8)-4);
+		revolve[2] = Math.round(Math.cos(spin)*15*4+Math.cos(spin*10)*8);
 
 		let check = new Array(root.position.x,root.position.y,root.position.z);
 		let is_same = prev.every(function(element, index) {	return element === check[index];});
@@ -125,63 +128,29 @@
 			for(let x = extend_index; x<branches.pos.length; x++) {
 				extend(branches.pos[x], branches.initdirr[x], x);
 			}
+			let testpos = new Array(revolve[0],revolve[1],revolve[2]);
+			drawbranch(testpos);
 			prev= new Array(check[0],check[1],check[2]);
 			if(pos.length%8==1) {
 				let curr =branch(pos[pos.length-2].position.toArray(),pos.length-2);
-				curr.map(function(x) {
-					drawbranch(x);
-				});
+				//curr.map(function(x) {
+					//let curr = drawbranch(x);
+					//branches2.push(curr);
+				//});
 
 			}
 		}
-		if(spin<Math.PI*8){
+		if(spin<Math.PI*2){
 			spin+=.005;
+		} else {
+			continueAnim=false;
 		}
 		renderer.render(scene, camera);
 	}
 
-	function drawroot(loc) {
-		let center = new THREE.Group();
-		scene.add(center);
-		const obj = new THREE.Mesh(boxGeo, boxMat);
-		obj.castShadow = true;
-		obj.receiveShadow = true;
-		obj.position.set(loc[0],loc[1],loc[2]);
-		pos.push(obj);
-		center.add(obj);
-	}
-
-	function drawbranch(loc) {
-		let center = new THREE.Group();
-		scene.add(center);
-		const boxGeo = new THREE.CubeGeometry(2,2,2);
-
-		const obj = new THREE.Mesh(boxGeo, boxMat2);
-		obj.castShadow = true;
-		obj.receiveShadow = true;
-		obj.position.set(loc[0],loc[1],loc[2]);
-		center.add(obj);
-	}
-
-	function drawcenter() {
-		let center = new THREE.Group();
-		scene.add(center);
-		const boxGeo = new THREE.CubeGeometry(120,4,120);
-		const boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color("rgb(0, 0, 128)"),
-			shading: THREE.FlatShading,
-			transparent: true,
-			opacity: .5
-		});
-		const obj = new THREE.Mesh(boxGeo, boxMat);
-		obj.castShadow = true;
-		obj.receiveShadow = true;
-		obj.position.set(0,0,0);
-		center.add(obj);
-	}
 
 	var pos = [];
-	var root, test, test2;
+	var root, test, test2, revolve;
 	var scene, camera, renderer, controls;
 
 	var width = window.innerWidth, height = window.innerHeight;
@@ -197,15 +166,13 @@
 		camera.position.y = 200;
 		camera.position.x = 50;
 
-
 		root = new THREE.Mesh(boxGeo, boxMat);
 		scene.add(root);
 
-
 		test = new THREE.Mesh(boxGeoinvis, boxMatinvis);
 		test2 = new THREE.Mesh(boxGeo2, boxMat2);
+		revolve = new Array(0,0,0);
 		root.add(test);
-
 		test.add(test2);
 
 		renderer = new THREE.WebGLRenderer();
@@ -228,11 +195,56 @@
 		light.shadow.camera.bottom = -100;
 		scene.add(light);
 		drawroot([0,0,0]);
-		drawcenter();
+		//drawcenter();
 		document.body.appendChild(renderer.domElement);
 
 		window.addEventListener('resize', onResize);
 	}
+
+
+		function drawroot(loc) {
+			let center = new THREE.Group();
+			let set = new Array(loc[0],loc[1],loc[2]);
+			scene.add(center);
+			const obj = new THREE.Mesh(boxGeo, boxMat);
+			obj.castShadow = true;
+			obj.receiveShadow = true;
+			obj.position.set(set[0],set[1],set[2]);
+			pos.push(obj);
+			center.add(obj);
+		}
+
+		function drawbranch(loc) {
+			let center = new THREE.Group();
+			let set = new Array(loc[0],loc[1],loc[2]);
+			scene.add(center);
+			const boxGeo = new THREE.CubeGeometry(2,2,2);
+
+			const obj = new THREE.Mesh(boxGeo, boxMat2);
+			obj.castShadow = true;
+			obj.receiveShadow = true;
+			obj.position.set(set[0],set[1],set[2]);
+			center.add(obj);
+			return obj;
+		}
+
+		function drawcenter() {
+			let center = new THREE.Group();
+			scene.add(center);
+			const boxGeo = new THREE.CubeGeometry(120,4,120);
+			const boxMat = new THREE.MeshPhongMaterial({
+				color: new THREE.Color("rgb(0, 0, 128)"),
+				shading: THREE.FlatShading,
+				transparent: true,
+				opacity: .5
+			});
+			const obj = new THREE.Mesh(boxGeo, boxMat);
+			obj.castShadow = true;
+			obj.receiveShadow = true;
+			obj.position.set(0,0,0);
+			center.add(obj);
+			return obj;
+		}
 
 	function onResize() {
 		width = window.innerWidth;
