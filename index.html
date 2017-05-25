@@ -39,7 +39,7 @@
 		root.position.x=Math.round(Math.sin(spin)*15)*4;
 		root.position.z=Math.round(Math.cos(spin)*15)*4;
 		root.position.y=Math.round(spin*15/Math.PI)*4;
-
+		middle.position.y = spin*15/Math.PI*4-20;
 		//follows red squares but doesn't round
 		revolve.position.x=Math.sin(spin)*15*4;
 		revolve.position.z=Math.cos(spin)*15*4;
@@ -47,18 +47,17 @@
 		revolve.rotateY(.005);
 
 		//arm is child of revolve.
-		arm.position.z = Math.sin(spin*4)*8;
-		arm.position.y = Math.cos(spin*4)*8;
+		arm.position.z = Math.sin(spin*8)*8;
+		arm.position.y = Math.cos(spin*8)*8;
 
-		let check_root = new Array(root.position.x,root.position.y,root.position.z);
+		worldpos.setFromMatrixPosition(root.matrixWorld);
+		let root_pos = new Array(worldpos.x,worldpos.y,worldpos.z);
 		let is_same_root = prev_root.every(function(element, index) {
-			return element === check_root[index];});
+			return element === root_pos[index];});
 
 		if(!is_same_root) {
-			worldpos.setFromMatrixPosition( root.matrixWorld );
-			let root_pos = new Array(worldpos.x,worldpos.y,worldpos.z);
-			drawroot(root_pos);
-			prev_root = new Array(check_root[0],check_root[1],check_root[2]);
+			drawroot(root_pos, spin);
+			prev_root = new Array(root_pos[0],root_pos[1],root_pos[2]);
 		}
 
 		worldpos.setFromMatrixPosition(arm.matrixWorld);
@@ -84,7 +83,7 @@
 
 
 	var pos = [];
-	var root, revolve, center, arm;
+	var root, revolve, center, arm, middle;
 	var scene, camera, renderer, controls;
 	var worldpos = new THREE.Vector3();
 	var width = window.innerWidth, height = window.innerHeight;
@@ -105,6 +104,9 @@
 
 		revolve = new THREE.Mesh(boxGeoinvis, boxMatinvis);
 		arm = new THREE.Mesh(boxGeo, boxMat2);
+		middle = new THREE.Mesh(boxGeo, boxMat);
+
+		scene.add(middle);
 		scene.add(revolve);
 		revolve.add(arm);
 
@@ -128,7 +130,7 @@
 		light.shadow.camera.top = 100;
 		light.shadow.camera.bottom = -100;
 		scene.add(light);
-		drawroot([0,0,0]);
+		//drawroot([0,0,0]);
 		drawcenter();
 		document.body.appendChild(renderer.domElement);
 
@@ -136,7 +138,7 @@
 	}
 
 
-		function drawroot(loc) {
+		function drawroot(loc, spin) {
 			let center = new THREE.Group();
 			let set = new Array(loc[0],loc[1],loc[2]);
 			scene.add(center);
