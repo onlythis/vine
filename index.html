@@ -30,15 +30,11 @@
 
 	'use strict';
 
-	var spin=0;
+	var spin=0, count=0, flow=0, flow_dir=true;
 	var prev_root = [0,0,0];
 	var prev_arm = [0,0,0];
 
 	function render() {
-		//red squares position
-		root.position.x=Math.round(Math.sin(spin)*15)*4;
-		root.position.z=Math.round(Math.cos(spin)*15)*4;
-		root.position.y=Math.round(spin*15/Math.PI)*4;
 		middle.position.y = spin*15/Math.PI*4-20;
 		//follows red squares but doesn't round
 		revolve.position.x=Math.sin(spin)*15*4;
@@ -49,29 +45,36 @@
 		//arm is child of revolve.
 		arm.position.z = Math.sin(spin*8)*8;
 		arm.position.y = Math.cos(spin*8)*8;
+		arm.rotateX(.02);
 
-		worldpos.setFromMatrixPosition(root.matrixWorld);
-		let root_pos = new Array(worldpos.x,worldpos.y,worldpos.z);
-		let is_same_root = prev_root.every(function(element, index) {
-			return element === root_pos[index];});
-
-		if(!is_same_root) {
-			drawroot(root_pos, spin);
-			prev_root = new Array(root_pos[0],root_pos[1],root_pos[2]);
-		}
-
+		//wave is child of arm.
+		wave.position.z = Math.sin(spin*4)*8;
+		wave2.position.z = -Math.sin(spin*4)*8;
+		//moves in and out, touches arm then moves away.
+		wave.position.y = Math.cos(spin*4)*8*Math.sin(spin*8);
+		wave2.position.y = -Math.cos(spin*4)*8*Math.sin(spin*8);
 		worldpos.setFromMatrixPosition(arm.matrixWorld);
 		let arm_pos = new Array(Math.round(worldpos.x/2)*2,Math.round(worldpos.y/2)*2,
-			Math.round(worldpos.z/2)*2);
+														Math.round(worldpos.z/2)*2);
+
+		worldpos.setFromMatrixPosition(wave.matrixWorld);
+		let wave_pos = new Array(worldpos.x, worldpos.y, worldpos.z);
+		worldpos.setFromMatrixPosition(wave2.matrixWorld);
+		let wave_pos2 = new Array(worldpos.x, worldpos.y, worldpos.z);
+
 		let is_same_arm = prev_arm.every(function(element, index) {
 			return element === arm_pos[index];});
 
 		if(!is_same_arm) {
 			drawbranch(arm_pos, spin);
 			prev_arm = new Array(arm_pos[0], arm_pos[1], arm_pos[2]);
+
 		}
-
-
+		count=(count+1)%3;
+		if(!count){
+			drawwave(wave_pos);
+			drawwave(wave_pos2);
+		}
 
 		if(spin<Math.PI*8){
 			spin+=.005;
@@ -82,8 +85,7 @@
 	}
 
 
-	var pos = [];
-	var root, revolve, center, arm, middle;
+	var root, revolve, center, arm, wave, wave2, middle, sphere;
 	var scene, camera, renderer, controls;
 	var worldpos = new THREE.Vector3();
 	var width = window.innerWidth, height = window.innerHeight;
@@ -92,11 +94,11 @@
 
 	function init() {
 		scene = new THREE.Scene();
-		camera = new THREE.PerspectiveCamera(35, width / height, 0.3, 1000);
+		camera = new THREE.PerspectiveCamera(50, width / height, 0.3, 1000);
 		scene.position.y-=20;
-		camera.position.z = 200;
-		camera.position.y = 200;
-		camera.position.x = 50;
+		camera.position.z = 150;
+		camera.position.y = 0;
+		camera.position.x = 0;
 		camera.lookAt(scene.position);
 
 		root = new THREE.Mesh(boxGeoinvis, boxMatinvis);
@@ -104,12 +106,16 @@
 
 		revolve = new THREE.Mesh(boxGeoinvis, boxMatinvis);
 		arm = new THREE.Mesh(boxGeo, boxMat2);
-		middle = new THREE.Mesh(boxGeo, boxMat);
+		wave = new THREE.Mesh(boxGeoinvis, boxMat2);
+		wave2 = new THREE.Mesh(boxGeoinvis, boxMat2);
 
-		scene.add(middle);
 		scene.add(revolve);
 		revolve.add(arm);
+		arm.add(wave);
+		arm.add(wave2);
 
+		middle = new THREE.Mesh(boxGeo, boxMat);
+		scene.add(middle);
 
 		renderer = new THREE.WebGLRenderer();
 		renderer.setPixelRatio(window.devicePixelRatio);
@@ -130,7 +136,7 @@
 		light.shadow.camera.top = 100;
 		light.shadow.camera.bottom = -100;
 		scene.add(light);
-		//drawroot([0,0,0]);
+
 		drawcenter();
 		document.body.appendChild(renderer.domElement);
 
@@ -138,15 +144,14 @@
 	}
 
 
-		function drawroot(loc, spin) {
+		function drawwave(loc, spin) {
 			let center = new THREE.Group();
 			let set = new Array(loc[0],loc[1],loc[2]);
 			scene.add(center);
-			const obj = new THREE.Mesh(boxGeo, boxMat);
+			const obj = new THREE.Mesh(boxGeoWave, boxMatWave);
 			obj.castShadow = true;
 			obj.receiveShadow = true;
 			obj.position.set(set[0],set[1],set[2]);
-			pos.push(obj);
 			center.add(obj);
 		}
 
@@ -154,13 +159,13 @@
 			let center = new THREE.Group();
 			let set = new Array(loc[0],loc[1],loc[2]);
 			scene.add(center);
-			const boxGeo = new THREE.CubeGeometry(2,2,2);
+			const boxGeo = new THREE.CubeGeometry(1.5,1.5,1.5);
 
 			const obj = new THREE.Mesh(boxGeo, boxMat2);
 			obj.castShadow = true;
 			obj.receiveShadow = true;
 			obj.position.set(set[0],set[1],set[2]);
-			obj.rotateY(rot);
+			//obj.rotateY(rot);
 			center.add(obj);
 			return obj;
 		}
@@ -168,7 +173,7 @@
 		function drawcenter() {
 			let center = new THREE.Group();
 			scene.add(center);
-			const boxGeo = new THREE.CubeGeometry(120,4,120);
+			const boxGeo = new THREE.CubeGeometry(4,4,4);
 			const boxMat = new THREE.MeshPhongMaterial({
 				color: new THREE.Color("rgb(0, 0, 128)"),
 				shading: THREE.FlatShading,
@@ -212,7 +217,7 @@
 		color: new THREE.Color("rgb(0, 255, 0)"),
 		shading: THREE.FlatShading,
 		transparent: true,
-		opacity: .5
+		opacity: 1
 	});
 	var boxGeoinvis = new THREE.CubeGeometry(0,0,0);
 	var boxMatinvis = new THREE.MeshPhongMaterial({
@@ -220,6 +225,14 @@
 		transparent: true,
 		opacity: 1
 	});
+	var boxGeoWave = new THREE.SphereGeometry(1, 4, 4);
+	var boxMatWave = new THREE.MeshPhongMaterial({
+		color: new THREE.Color("rgb(255, 0, 0)"),
+		shading: THREE.FlatShading,
+		transparent: true,
+		opacity: .5
+	});
+	var sphereGeo = new  THREE.SphereGeometry(60, 32, 32);
 
 	init();
 	animate();
