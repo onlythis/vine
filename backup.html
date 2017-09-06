@@ -3,7 +3,8 @@
 <head>
 	<title>Vine</title>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0,
+	 maximum-scale=1.0">
 	<style>
 	body {
 		color: #cccccc;
@@ -28,123 +29,54 @@
 	<script>
 
 	'use strict';
-	//posroot isnt random. goes in circle follows grid. or doesnt follow grid is much more circular looking.
-	//root doing vine in grid. look at netbeans code
 
+	var spin=0, count=0, flow=0, flow_dir=true;
+	var prev_root = [0,0,0];
+	var prev_arm = [0,0,0];
 
-	//mesh.add( mesh2 );
-
-	function vineRoot(currpos) {
-
-	}
-	var branches = {
-		pos: [],
-		initdirr: [],
-		length: []
-	};
-	var extend_index = 0;
-	function extend(pos, dirr, index){
-		let loc = -1;
-		if(dirr==0){
-			loc = new Array(pos[0]-2, pos[1], pos[2]);
-		}
-		if(dirr==1){
-			loc = new Array(pos[0]+2, pos[1], pos[2]);
-		}
-		if(dirr==2){
-			loc = new Array(pos[0], pos[1]-2, pos[2]);
-		}
-		if(dirr==3){
-			loc = new Array(pos[0], pos[1]+2, pos[2]);
-		}
-		if(dirr==4){
-			loc = new Array(pos[0], pos[1], pos[2]-2);
-		}
-		if(dirr==5){
-			loc = new Array(pos[0], pos[1], pos[2]+2);
-		}
-		branches.pos[index] = loc;
-		branches.length[index]+=1;
-		if(branches.length[index]>7){
-			extend_index+=1;
-		}
-		drawbranch(loc);
-	}
-
-	function branch(currpos, index) {
-		let sqrs = adjacentsqs(currpos);
-		let initdirrs = [0,1,2,3,4,5];
-		let rem = [];
-		let posprev = new Array(pos[index-1].position.x,pos[index-1].position.y,pos[index-1].position.z);
-		let posnext = new Array(pos[index+1].position.x,pos[index+1].position.y,pos[index+1].position.z);
-		for(let x = 0; x<sqrs.length; x++){
-			let is_same_prev = sqrs[x].every(function(element, index) {	return element === posprev[index];});
-			let is_same_next = sqrs[x].every(function(element, index) {	return element === posnext[index];});
-			if(is_same_prev || is_same_next) {
-				rem.push(x);
-			}
-		}
-		for(let x = rem.length-1; x>=0; x--){
-			sqrs.splice(rem[x],1);
-			initdirrs.splice(rem[x],1);
-		}
-		for(let x = 0; x<sqrs.length; x++){
-			branches.pos.push(sqrs[x]);
-			branches.initdirr.push(initdirrs[x]);
-			branches.length.push(0);
-		}
-		return sqrs;
-	}
-	//dirrs = left, right, down, up, back, forward
-	function adjacentsqs(currpos) {
-		let ret = [];
-		ret.push(new Array(currpos[0]-4,currpos[1],currpos[2]));
-		ret.push(new Array(currpos[0]+4,currpos[1],currpos[2]));
-		ret.push(new Array(currpos[0],currpos[1]-4,currpos[2]));
-		ret.push(new Array(currpos[0],currpos[1]+4,currpos[2]));
-		ret.push(new Array(currpos[0],currpos[1],currpos[2]-4));
-		ret.push(new Array(currpos[0],currpos[1],currpos[2]+4));
-		return ret;
-	}
-
-	var spin=0;
-	var prev = [0,0,0];
-	var branches2 = [];
 	function render() {
-		root.position.x=Math.round(Math.sin(spin)*15)*4;
-		root.position.z=Math.round(Math.cos(spin)*15)*4;
-		root.position.y=Math.round(spin*15/Math.PI)*4;
-		//root.children[0] is invis
-		root.children[0].rotateY(.005);
-		//test is child of root.
-		//test2 is child of test.
-		test2.position.z = Math.sin(spin*4)*4;
-		test2.position.y = Math.cos(spin*4)*4;
-		revolve.position.x = Math.sin(spin)*15*4+Math.sin(spin*10)*8;
-		revolve.position.y = spin*60/Math.PI+Math.sin(spin*10)*8-4;
-		revolve.position.z = Math.cos(spin)*15*4+Math.cos(spin*10)*8;
-		revolve.rotateX(.005);
+		middle.position.y = spin*15/Math.PI*4-20;
+		//follows red squares but doesn't round
+		revolve.position.x=Math.sin(spin)*15*4;
+		revolve.position.z=Math.cos(spin)*15*4;
+		//revolve.position.y=spin*15/Math.PI*4;
+		revolve.rotateY(.005);
 
-		let check = new Array(root.position.x,root.position.y,root.position.z);
-		let is_same = prev.every(function(element, index) {	return element === check[index];});
-		if(!is_same) {
+		//arm is child of revolve.
+		arm.position.z = Math.sin(spin*8)*8;
+		arm.position.y = Math.cos(spin*8)*8;
+		arm.rotateX(.015);
 
-			//for(let x = extend_index; x<branches.pos.length; x++) {
-			//	extend(branches.pos[x], branches.initdirr[x], x);
-			//}
-			vector.setFromMatrixPosition( root.matrixWorld );
-			let rootworld = new Array(vector.x,vector.y,vector.z);
-			drawroot(rootworld);
+		//wave is child of arm.
+		wave.position.z = Math.sin(spin*3)*14;
+		wave2.position.z = -wave.position.z;
+		//moves in and out, touches arm then moves away.
+		//wave.position.y = Math.cos(spin*4)*8;
+		//wave2.position.y = -wave.position.y;
+		worldpos.setFromMatrixPosition(arm.matrixWorld);
+		//let arm_pos = new Array(Math.round(worldpos.x/2)*2,Math.round(worldpos.y/2)*2, Math.round(worldpos.z/2)*2);
+		let arm_pos = new Array(worldpos.x,worldpos.y, worldpos.z);
+		worldpos.setFromMatrixPosition(wave.matrixWorld);
+		let wave_pos = new Array(worldpos.x, worldpos.y, worldpos.z);
+		worldpos.setFromMatrixPosition(wave2.matrixWorld);
+		let wave_pos2 = new Array(worldpos.x, worldpos.y, worldpos.z);
 
-			prev= new Array(check[0],check[1],check[2]);
-				//let curr =branch(pos[pos.length-2].position.toArray(),pos.length-2);
+		//let is_same_arm = prev_arm.every(function(element, index) {return element === arm_pos[index];});
+		/*
+		if(!is_same_arm) {
+			drawbranch(arm_pos, spin);
+			prev_arm = new Array(arm_pos[0], arm_pos[1], arm_pos[2]);
+		}
+		*/
+
+		count=(count+1)%5;
+		if(!count){
+			drawbranch(arm_pos, spin);
+			drawwave(wave_pos);
+			drawwave(wave_pos2);
 		}
 
-		vector.setFromMatrixPosition(test2.matrixWorld);
-		let testpos = new Array(vector.x,vector.y,vector.z);
-		drawbranch(testpos);
-
-		if(spin<Math.PI*8){
+		if(spin<Math.PI*2){
 			spin+=.005;
 		} else {
 			continueAnim=false;
@@ -153,34 +85,38 @@
 	}
 
 
-	var pos = [];
-	var root, test, test2, revolve, center;
+	var root, revolve, center, arm, wave, wave2, middle, sphere;
 	var scene, camera, renderer, controls;
-	var vector = new THREE.Vector3();
+	var worldpos = new THREE.Vector3();
 	var width = window.innerWidth, height = window.innerHeight;
 	var animframe;
 	var continueAnim = true;
 
 	function init() {
 		scene = new THREE.Scene();
-		camera = new THREE.PerspectiveCamera(35, width / height, 0.3, 1000);
-		scene.position.y-=20;
+		camera = new THREE.PerspectiveCamera(50, width / height, 0.3, 1000);
+		//scene.position.y-=20;
+		//finally figured out the reason worldpos was 20 off.
+		camera.position.z = 150;
+		camera.position.y = 0;
+		camera.position.x = 0;
 		camera.lookAt(scene.position);
-		camera.position.z = 200;
-		camera.position.y = 200;
-		camera.position.x = 50;
 
 		root = new THREE.Mesh(boxGeoinvis, boxMatinvis);
 		scene.add(root);
 
-		test = new THREE.Mesh(boxGeoinvis, boxMatinvis);
-		test2 = new THREE.Mesh(boxGeo2, boxMat2);
 		revolve = new THREE.Mesh(boxGeoinvis, boxMatinvis);
-		scene.add(revolve);
-		root.add(test);
-		root.children[0].rotateX(.5);
-		test.add(test2);
+		arm = new THREE.Mesh(boxGeo, boxMat2);
+		wave = new THREE.Mesh(boxGeoinvis, boxMat2);
+		wave2 = new THREE.Mesh(boxGeoinvis, boxMat2);
 
+		scene.add(revolve);
+		revolve.add(arm);
+		arm.add(wave);
+		arm.add(wave2);
+
+		middle = new THREE.Mesh(boxGeo, boxMat);
+		scene.add(middle);
 
 		renderer = new THREE.WebGLRenderer();
 		renderer.setPixelRatio(window.devicePixelRatio);
@@ -201,7 +137,7 @@
 		light.shadow.camera.top = 100;
 		light.shadow.camera.bottom = -100;
 		scene.add(light);
-		drawroot([0,0,0]);
+
 		drawcenter();
 		document.body.appendChild(renderer.domElement);
 
@@ -209,28 +145,28 @@
 	}
 
 
-		function drawroot(loc) {
+		function drawwave(loc, spin) {
 			let center = new THREE.Group();
 			let set = new Array(loc[0],loc[1],loc[2]);
 			scene.add(center);
-			const obj = new THREE.Mesh(boxGeo, boxMat);
+			const obj = new THREE.Mesh(boxGeoWave, boxMatWave);
 			obj.castShadow = true;
 			obj.receiveShadow = true;
 			obj.position.set(set[0],set[1],set[2]);
-			pos.push(obj);
 			center.add(obj);
 		}
 
-		function drawbranch(loc) {
+		function drawbranch(loc, rot) {
 			let center = new THREE.Group();
 			let set = new Array(loc[0],loc[1],loc[2]);
 			scene.add(center);
-			const boxGeo = new THREE.CubeGeometry(2,2,2);
+			const boxGeo = new THREE.CubeGeometry(1.5,1.5,1.5);
 
 			const obj = new THREE.Mesh(boxGeo, boxMat2);
 			obj.castShadow = true;
 			obj.receiveShadow = true;
 			obj.position.set(set[0],set[1],set[2]);
+			//obj.rotateY(rot);
 			center.add(obj);
 			return obj;
 		}
@@ -238,7 +174,7 @@
 		function drawcenter() {
 			let center = new THREE.Group();
 			scene.add(center);
-			const boxGeo = new THREE.CubeGeometry(120,4,120);
+			const boxGeo = new THREE.CubeGeometry(4,4,4);
 			const boxMat = new THREE.MeshPhongMaterial({
 				color: new THREE.Color("rgb(0, 0, 128)"),
 				shading: THREE.FlatShading,
@@ -248,9 +184,8 @@
 			const obj = new THREE.Mesh(boxGeo, boxMat);
 			obj.castShadow = true;
 			obj.receiveShadow = true;
-			vector.setFromMatrixPosition(obj.matrixWorld);
-			console.log(vector);
-			obj.position.set(vector.x,vector.y,vector.z);
+			worldpos.setFromMatrixPosition(obj.matrixWorld);
+			obj.position.set(worldpos.x,worldpos.y,worldpos.z);
 			center.add(obj);
 			return obj;
 		}
@@ -291,6 +226,14 @@
 		transparent: true,
 		opacity: 1
 	});
+	var boxGeoWave = new THREE.SphereGeometry(1, 4, 4);
+	var boxMatWave = new THREE.MeshPhongMaterial({
+		color: new THREE.Color("rgb(255, 0, 0)"),
+		shading: THREE.FlatShading,
+		transparent: true,
+		opacity: .5
+	});
+	var sphereGeo = new  THREE.SphereGeometry(60, 32, 32);
 
 	init();
 	animate();

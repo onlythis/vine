@@ -30,14 +30,13 @@
 
 'use strict';
 
-function generateMaze(width, height, depth) {
-  var cells = new Array(width * height * depth), // each cell’s edge bits
-      remaining = new Array(width * height * depth), // cell indexes to visit
-      previous = new Array(width * height * depth); // current random walk
+function generateMaze(width, height) {
+  var cells = new Array(width * height), // each cell’s edge bits
+      remaining = new Array(width * height), // cell indexes to visit
+      previous = new Array(width * height); // current random walk
 	for(var x = 0; x<remaining.length; x++){
 		remaining[x] = x;
 	}
-
   // Add the starting cell.
   var start = remaining.pop();
   cells[start] = 0;
@@ -49,28 +48,29 @@ function generateMaze(width, height, depth) {
   return cells;
 
   function loopErasedRandomWalk() {
-    var i0, i1, x0, y0, z0;
+    var i0,
+        i1,
+        x0,
+        y0;
 
     // Pick a location that’s not yet in the maze (if any).
     do {
       if ((i0 = remaining.pop()) == null) return true;
     }
     while (cells[i0] >= 0);
+
     // Perform a random walk starting at this location,
     previous[i0] = i0;
     while (true) {
-			x0 = i0 % width;
-      y0 = (i0 / width | 0) % height;
-			z0 = i0 / (width * height) | 0;
+      x0 = i0 % width;
+      y0 = i0 / width | 0;
 
       // picking a legal random direction at each step.
-      i1 = Math.random() * 6 | 0;
+      i1 = Math.random() * 4 | 0;
       if (i1 === 0) { if (y0 <= 0) continue; --y0, i1 = i0 - width; }
       else if (i1 === 1) { if (y0 >= height - 1) continue; ++y0, i1 = i0 + width; }
       else if (i1 === 2) { if (x0 <= 0) continue; --x0, i1 = i0 - 1; }
-      else if (i1 === 3) { if (x0 >= width - 1)  continue; ++x0, i1 = i0 + 1; }
-			else if (i1 === 4) { if (z0 <= 0) continue; --z0, i1 = i0 - (width * height); }
-			else               { if (z0 >= depth - 1)  continue; ++z0, i1 = i0 + (width * height); }
+      else { if (x0 >= width - 1) continue; ++x0, i1 = i0 + 1; }
 
       // If this new cell was visited previously during this walk,
       // erase the loop, rewinding the path to its earlier state.
@@ -86,12 +86,10 @@ function generateMaze(width, height, depth) {
         // Also erase this walk’s history to not interfere with subsequent walks.
 
         while ((i0 = previous[i1]) !== i1) {
-          if      (i1 === i0 + 1) cells[i0] |= E, cells[i1] |= W;
+          if (i1 === i0 + 1) cells[i0] |= E, cells[i1] |= W;
           else if (i1 === i0 - 1) cells[i0] |= W, cells[i1] |= E;
-          else if (i1 === i0 + width)  cells[i0] |= S, cells[i1] |= N;
-          else if (i1 === i0 - width)  cells[i0] |= N, cells[i1] |= S;
-					else if (i1 === i0 + (width * height)) cells[i0] |= F, cells[i1] |= B;
-					else if (i1 === i0 - (width * height)) cells[i0] |= B, cells[i1] |= F;
+          else if (i1 === i0 + width) cells[i0] |= S, cells[i1] |= N;
+          else cells[i0] |= N, cells[i1] |= S;
           previous[i1] = NaN;
           i1 = i0;
         }
@@ -110,54 +108,56 @@ function generateMaze(width, height, depth) {
   }
 }
 
+var boxGeoWave = new THREE.SphereGeometry(1, 8, 8);
+var cellArr = [];
+
+function fillCell(loc, hue) {
+	total++;
+	let sqr = new THREE.Group();
+	let x = loc % width;
+	let y = loc / width | 0;
+	let set = new Array(Math.sin(x * (cellSize + cellSpacing)/(width/Math.PI)) * width/Math.PI,
+	 										y * (cellSize + cellSpacing) - width / 2 * cellSize,
+											Math.cos(x * (cellSize + cellSpacing)/(width/Math.PI)) * width/Math.PI);
+	scene.add(sqr);
+	var boxMat = new THREE.MeshPhongMaterial({
+		color: new THREE.Color(),
+		shading: THREE.FlatShading,
+		transparent: true,
+		opacity: 1
+	});
+	boxMat.color.setHSL(hue/360, 1, 0.5);
+	const obj = new THREE.Mesh(boxGeoWave, boxMat);
+	obj.castShadow = true;
+	obj.receiveShadow = true;
+	obj.position.set(set[0],set[1],set[2]);
+	//obj.rotateY(rot);
+	sqr.add(obj);
+	cellArr.push(obj);
+	return obj;
+}
+
 //biary shift
 var N = 1 << 0,
 		S = 1 << 1,
 		W = 1 << 2,
-		E = 1 << 3,
-		F = 1 << 4,
-		B = 1 << 5;
+		E = 1 << 3;
 
-var width = 20, height = 20, depth = 20,
-		cells = generateMaze(width, height, depth),
-		frontier = [width * height * depth -1];
+var width = 128, height = 128,
+		cells = generateMaze(width, height),
+		visited = new Array([width * height]),
+		frontier = [width * height - 1];
 
-var n0, fill = true, distance = 0, visited = new Array(width * height * depth),
+var n0, fill = true, distance = 0, sqrs = [], visited = new Array(width * height),
 		cellSize = 2, cellSpacing = 0, total = 0;
-		visited[frontier[0]] = true;
 
+var boxGeo = new THREE.CubeGeometry(cellSize,cellSize,cellSize);
+var color = new THREE.Color();
 function render() {
-	total++;
-	if(total>1000){
-		console.log("render stop");
-		continueAnim=false;
-		fill=false;
-	}
-	if(fill){
-		if (!(n0 = frontier.length)) {console.log(total, width * height * depth), fill=false};
-	  //hue, saturation, lightness
-	  //context.fillStyle = d3.hsl(distance++ % 360, 1, .5) + "";
-	  //if (distance) {
-		distance = distance+1 % 360;
-		//console.log(distance);
-	    for (var i = 0; i < n0; ++i) {
-	      fillCell(frontier[i], distance % 360);
-	    }
-	    var frontier1 = [],
-	        i0,
-	        i1;
-
-	    for (var i = 0; i < n0; ++i) {
-	      i0 = frontier[i];
-	      if (cells[i0] & E && !visited[i1 = i0 + 1]) visited[i1] = true, frontier1.push(i1);
-	      if (cells[i0] & W && !visited[i1 = i0 - 1]) visited[i1] = true, frontier1.push(i1);
-	      if (cells[i0] & S && !visited[i1 = i0 + width]) visited[i1] = true, frontier1.push(i1);
-	      if (cells[i0] & N && !visited[i1 = i0 - width]) visited[i1] = true, frontier1.push(i1);
-				if (cells[i0] & F && !visited[i1 = i0 + (width * height)]) visited[i1] = true, frontier1.push(i1);
-				if (cells[i0] & B && !visited[i1 = i0 - (width * height)]) visited[i1] = true, frontier1.push(i1);
-	    }
-	    frontier = frontier1;
-	  }
+		for(var x = 0; x<cellArr.length; x++){
+			let hue = cellArr[x].material.color.getHSL().h+2.5/360;
+			cellArr[x].material.color.setHSL(hue, 1, 0.5);
+		}
 		renderer.render(scene, camera);
 	}
 
@@ -166,31 +166,6 @@ function render() {
 	var Wwidth = window.innerWidth, Wheight = window.innerHeight;
 	var animframe;
 	var continueAnim = true;
-	var boxGeo = new THREE.CubeGeometry(cellSize,cellSize,cellSize);
-	var boxGeoWave = new THREE.SphereGeometry(1, 8, 8);
-
-	function fillCell(loc, hue) {
-		let sqr = new THREE.Group();
-		let x = loc % width;
-		let y = (loc / width | 0) % height;
-		let z = (loc / (width * height) | 0);
-		let set = new Array(x*3,y*3,z*3);
-		scene.add(sqr);
-		var boxMat = new THREE.MeshPhongMaterial({
-			color: new THREE.Color(),
-			shading: THREE.FlatShading,
-			transparent: true,
-			opacity: 1
-		});
-		boxMat.color.setHSL(hue/360, 1, 0.5);
-		const obj = new THREE.Mesh(boxGeoWave, boxMat);
-		obj.castShadow = true;
-		obj.receiveShadow = true;
-		obj.position.set(set[0],set[1],set[2]);
-		//obj.rotateY(rot);
-		sqr.add(obj);
-		return obj;
-	}
 
 	function init() {
 		scene = new THREE.Scene();
@@ -198,8 +173,8 @@ function render() {
 		//scene.position.y-=20;
 		//finally figured out the reason worldpos was 20 off.
 		camera.position.z = 150;
-		camera.position.y = 100;
-		camera.position.x = 100;
+		camera.position.y = 0;
+		camera.position.x = 0;
 		camera.lookAt(scene.position);
 
 		renderer = new THREE.WebGLRenderer();
@@ -209,7 +184,30 @@ function render() {
 		renderer.shadowMap.enabled = true;
 
 		controls = new THREE.OrbitControls(camera, renderer.domElement);
+		while(fill){
+			if (!(n0 = frontier.length)) {console.log(total, width * height), fill=false};
+		  //hue, saturation, lightness
+		  //context.fillStyle = d3.hsl(distance++ % 360, 1, .5) + "";
+		  //if (distance) {
+			distance = distance+1 % 360;
+			//console.log(distance);
+		    for (var i = 0; i < n0; ++i) {
+		      fillCell(frontier[i], distance % 360);
+		    }
+		    var frontier1 = [],
+		        i0,
+		        i1;
 
+		    for (var i = 0; i < n0; ++i) {
+		      i0 = frontier[i];
+		      if (cells[i0] & E && !visited[i1 = i0 + 1]) visited[i1] = true, frontier1.push(i1);
+		      if (cells[i0] & W && !visited[i1 = i0 - 1]) visited[i1] = true, frontier1.push(i1);
+		      if (cells[i0] & S && !visited[i1 = i0 + width]) visited[i1] = true, frontier1.push(i1);
+		      if (cells[i0] & N && !visited[i1 = i0 - width]) visited[i1] = true, frontier1.push(i1);
+		    }
+		    frontier = frontier1;
+		  }
+		console.log(cellArr[0].material.color);
 		const ambientLight = new THREE.AmbientLight();
 		scene.add(ambientLight);
 
